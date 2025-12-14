@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Energy Tracker – Final</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* ========== ANIMATIONS ========== */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-25px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(25px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(0, 212, 255, 0); }
+    }
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 10px rgba(0, 212, 255, 0.3); }
+      50% { box-shadow: 0 0 25px rgba(0, 212, 255, 0.6); }
+    }
+    @keyframes shimmer {
+      0% { background-position: -1000px 0; }
+      100% { background-position: 1000px 0; }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0a0e27;
+      --card: #1a1f3a;
+      --text: #e8f0ff;
+      --subtext: #a0aec0;
+      --border: #2d3561;
+      --accent: #00d4ff;
+      --accent-soft: #0066ff;
+      --primary-vibrant: #ff006e;
+      --danger: #ff4757;
+      --warning: #ffb703;
+      --success: #00f5a0;
+      --muted: #6b7a9f;
+      --table-header: #0f1428;
+      --grid-line: #2d3561;
+      --card-shadow: 0 8px 32px rgba(0, 212, 255, 0.12);
+      --hover-shadow: 0 12px 48px rgba(0, 212, 255, 0.2);
+    }
+    :root[data-theme="light"] {
+      --bg: #f8f9ff;
+      --card: #ffffff;
+      --text: #0a0e27;
+      --subtext: #666b7f;
+      --border: #e0e4f0;
+      --accent: #0066ff;
+      --accent-soft: #3399ff;
+      --primary-vibrant: #ff0066;
+      --danger: #ff3333;
+      --warning: #ff9500;
+      --success: #00cc66;
+      --muted: #8899aa;
+      --table-header: #f0f3ff;
+      --grid-line: #e8ecf5;
+      --card-shadow: 0 8px 32px rgba(0, 102, 255, 0.08);
+      --hover-shadow: 0 12px 48px rgba(0, 102, 255, 0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    html { scroll-behavior: smooth; }
+    body { 
+      background: var(--bg); 
+      color: var(--text); 
+      padding: 16px; 
+      transition: background 0.5s ease-out, color 0.5s ease-out;
+      animation: fadeIn 0.6s ease-out;
+    }
+    h1 { text-align: center; margin-bottom: 4px; animation: slideInDown 0.5s ease-out; }
+    h2 { animation: slideInLeft 0.4s ease-out; }
+    h3 { animation: slideInLeft 0.4s ease-out; }
+
+    .top-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 8px; margin-bottom: 8px; animation: slideInDown 0.5s ease-out;
+    }
+    .top-bar small { color: var(--subtext); }
+
+    .tabs { 
+      display: flex; gap: 8px; margin-bottom: 16px; 
+      animation: slideInUp 0.5s ease-out;
+    }
+    .tab-btn {
+      flex: 1; padding: 12px; border: none; cursor: pointer;
+      background: var(--card); color: var(--subtext); border-radius: 8px;
+      border: 1px solid var(--border); font-weight: 500;
+      transition: all 0.3s ease-out;
+      position: relative; overflow: hidden;
+    }
+    .tab-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0, 212, 255, 0.2);
+      color: var(--accent);
+    }
+    .tab-btn.active { 
+      background: linear-gradient(135deg, var(--accent), var(--primary-vibrant)); 
+      color: #fff; 
+      border-color: var(--accent);
+      box-shadow: 0 10px 32px rgba(0, 212, 255, 0.35);
+      animation: pulse 0.5s ease-out;
+    }
+
+    .tab { display: none; }
+    .tab.active { 
+      display: block;
+      animation: slideInUp 0.4s ease-out;
+    }
+
+    .card {
+      background: var(--card); padding: 20px; border-radius: 12px;
+      box-shadow: var(--card-shadow); margin-bottom: 16px;
+      border: 1px solid var(--border);
+      transition: box-shadow 0.3s ease-out, transform 0.3s ease-out;
+      animation: slideInUp 0.5s ease-out;
+      will-change: transform;
+    }
+    .card:hover {
+      box-shadow: var(--hover-shadow);
+      transform: translateY(-4px);
+    }
+
+    label { 
+      display: block; margin-bottom: 6px; font-size: 14px; 
+      color: var(--subtext); font-weight: 500;
+      animation: fadeIn 0.4s ease-out;
+    }
+    input, textarea, select {
+      width: 100%; padding: 10px; margin-bottom: 10px;
+      border-radius: 6px; border: 1.5px solid var(--border);
+      background: var(--bg); color: var(--text);
+      transition: border-color 0.3s ease-out, box-shadow 0.3s ease-out;
+      font-size: 14px;
+    }
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.15);
+    }
+    textarea { resize: vertical; min-height: 60px; }
+
+    button {
+      transition: all 0.25s ease-out;
+      font-weight: 600; font-size: 14px;
+      cursor: pointer;
+      will-change: transform;
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, var(--success), #00d4ff); 
+      color: #000; border: none;
+      padding: 10px 16px; border-radius: 6px;
+    }
+    button.primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 245, 160, 0.35);
+    }
+    button.primary:active { transform: translateY(0); }
+
+    button.danger {
+      background: linear-gradient(135deg, #ff4757, #ff3333); 
+      color: #fff; border: none;
+      padding: 6px 10px; border-radius: 4px;
+    }
+    button.danger:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 71, 87, 0.35);
+    }
+
+    button.secondary {
+      background: linear-gradient(135deg, var(--muted), #6b7a9f); 
+      color: #fff; border: none;
+      padding: 6px 10px; border-radius: 4px;
+    }
+    button.secondary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(107, 122, 159, 0.25);
+    }
+
+    button.ghost {
+      background: transparent; color: var(--text); 
+      border: 1.5px solid var(--border);
+      padding: 8px 12px; border-radius: 6px;
+      transition: all 0.25s ease-out;
+    }
+    button.ghost:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 15px rgba(0, 212, 255, 0.25);
+      transform: translateY(-2px);
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { border-bottom: 1px solid var(--border); padding: 8px 4px; text-align: center; }
+    th { 
+      background: var(--table-header); position: sticky; top: 0; z-index: 1; 
+      color: var(--text); font-weight: 600;
+      animation: slideInDown 0.5s ease-out;
+    }
+    tr:hover { background: rgba(0, 212, 255, 0.05); }
+
+    .high { color: var(--warning); font-weight: 600; }
+    .status-reward { color: var(--success); font-weight: 600; animation: pulse 1s infinite; }
+    .status-warning { color: var(--warning); font-weight: 600; }
+    .status-normal { color: var(--subtext); }
+
+    .stats { 
+      display: flex; gap: 10px; flex-wrap: wrap; 
+      animation: slideInUp 0.5s ease-out;
+    }
+    .stat-box {
+      flex: 1; min-width: 120px; padding: 14px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--bg), rgba(0, 212, 255, 0.05));
+      text-align: center; border: 1.5px solid var(--border);
+      transition: transform 0.3s ease-out, box-shadow 0.3s ease-out, border-color 0.3s ease-out;
+      animation: slideInUp 0.4s ease-out;
+      will-change: transform;
+    }
+    .stat-box:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--hover-shadow);
+      border-color: var(--accent);
+    }
+    .stat-box-title { 
+      font-size: 11px; color: var(--subtext); margin-bottom: 6px; 
+      font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .stat-box-value { 
+      font-size: 18px; font-weight: 700; 
+      background: linear-gradient(135deg, var(--accent), var(--primary-vibrant));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    canvas { max-width: 100%; background: var(--bg); border-radius: 8px; animation: slideInUp 0.5s ease-out; }
+
+    .energy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 10px;
+      animation: slideInUp 0.5s ease-out;
+    }
+    .energy-box {
+      background: linear-gradient(135deg, var(--bg), rgba(0, 212, 255, 0.03));
+      padding: 10px; border-radius: 8px;
+      border: 1.5px solid var(--border);
+      transition: transform 0.3s ease-out, box-shadow 0.3s ease-out, border-color 0.3s ease-out;
+      animation: slideInUp 0.4s ease-out;
+      will-change: transform;
+    }
+    .energy-box:hover {
+      border-color: var(--accent);
+      box-shadow: 0 8px 24px rgba(0, 212, 255, 0.2);
+      transform: translateY(-3px);
+    }
+    .energy-label {
+      font-size: 12px; color: var(--subtext); margin-bottom: 6px; 
+      text-align: center; font-weight: 600;
+    }
+    .energy-input {
+      width: 100%; padding: 8px; border-radius: 4px;
+      border: 1px solid var(--border); background: var(--bg); 
+      color: var(--text); text-align: center;
+      transition: all 0.3s ease-out;
+    }
+    .energy-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+    }
+
+    .flex-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+    .flex-row > div { flex: 1; min-width: 120px; }
+
+    .pill {
+      display: inline-block; padding: 4px 10px; border-radius: 999px;
+      font-size: 11px; border: 1px solid var(--border); 
+      color: var(--subtext); font-weight: 600;
+      background: rgba(0, 212, 255, 0.08);
+      animation: slideInRight 0.4s ease-out;
+    }
+
+    .charts-grid { 
+      display: grid; gap: 16px;
+      animation: slideInUp 0.5s ease-out;
+    }
+    @media (min-width: 900px) {
+      .charts-grid { grid-template-columns: 1.2fr 1.2fr; }
+    }
+
+    #addMsg, #profileMsg {
+      animation: slideInUp 0.3s ease-out !important;
+    }
+
+    /* Theme transition - optimized */
+    [data-theme] input,
+    [data-theme] textarea,
+    [data-theme] select,
+    [data-theme] button,
+    [data-theme] .card,
+    [data-theme] .stat-box,
+    [data-theme] .energy-box {
+      transition: background-color 0.3s ease-out, color 0.3s ease-out, border-color 0.3s ease-out, box-shadow 0.3s ease-out;
+    }
+
+    hr { border: none; border-top: 1px solid var(--border); transition: border-color 0.4s ease-out; }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <div>
+      <h1>⚡ Energy Tracker Pro</h1>
+      <small>Multi‑source • Notes • Rewards • CSV export • Theme • Settings</small>
+    </div>
+    <div style="display:flex; gap:6px;">
+      <button class="ghost" id="themeToggleBtn">🌙 Dark Mode</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="add">📝 Add Data</button>
+    <button class="tab-btn" data-tab="history">📊 History</button>
+    <button class="tab-btn" data-tab="dashboard">📈 Dashboard</button>
+    <button class="tab-btn" data-tab="settings">⚙️ Settings</button>
+  </div>
+
+  <!-- Add Data -->
+  <div id="add" class="tab active card">
+    <h2>Add Daily Entry</h2>
+    <br />
+    <div class="flex-row">
+      <div>
+        <label>Date</label>
+        <input type="date" id="dateInput" />
+      </div>
+      <div>
+        <label>Daily Target Consumption (kWh)</label>
+        <input type="number" id="targetInput" step="0.01" placeholder="e.g. 100" />
+      </div>
+    </div>
+
+    <p style="font-size:13px;margin:8px 0;font-weight:600;">⚡ Energy generated from each source (kWh):</p>
+    <div class="energy-grid">
+      <div class="energy-box">
+        <div class="energy-label">🔬 Chemical</div>
+        <input type="number" id="chemInput" class="energy-input" step="0.01" value="0" />
+      </div>
+      <div class="energy-box">
+        <div class="energy-label">🔥 Thermal</div>
+        <input type="number" id="thermInput" class="energy-input" step="0.01" value="0" />
+      </div>
+      <div class="energy-box">
+        <div class="energy-label">⚛️ Nuclear</div>
+        <input type="number" id="nucInput" class="energy-input" step="0.01" value="0" />
+      </div>
+      <div class="energy-box">
+        <div class="energy-label">☀️ Solar</div>
+        <input type="number" id="solarInput" class="energy-input" step="0.01" value="0" />
+      </div>
+      <div class="energy-box">
+        <div class="energy-label">💨 Wind</div>
+        <input type="number" id="windInput" class="energy-input" step="0.01" value="0" />
+      </div>
+      <div class="energy-box">
+        <div class="energy-label">⚙️ Mechanical</div>
+        <input type="number" id="mechInput" class="energy-input" step="0.01" value="0" />
+      </div>
+    </div>
+
+    <label>Total Generated: <span id="totalGenDisplay" style="color:var(--accent);font-weight:700;">0.00</span> kWh</label>
+    <label>Energy Consumed (kWh)</label>
+    <input type="number" id="conInput" step="0.01" />
+    <label>Energy Saved (auto): <span id="storedDisplay" style="color:var(--success);font-weight:700;">0.00</span> kWh</label>
+
+    <label>Notes / Remarks (optional)</label>
+    <textarea id="noteInput" placeholder="Example: Extra shift, maintenance shutdown, very efficient day, etc."></textarea>
+
+    <button class="primary" id="saveBtn">✓ Save Entry</button>
+    <p id="addMsg" style="margin-top:8px;font-size:13px;"></p>
+  </div>
+
+  <!-- History -->
+  <div id="history" class="tab card">
+    <div class="flex-row" style="margin-bottom:10px;">
+      <h2 style="flex:1;">📋 History</h2>
+      <div>
+        <label style="font-size:12px;">Filter by date</label>
+        <div class="flex-row">
+          <div><input type="date" id="fromDate" /></div>
+          <div><input type="date" id="toDate" /></div>
+          <div><button class="secondary" id="clearFilterBtn">Clear</button></div>
+        </div>
+      </div>
+    </div>
+    <div style="max-height:280px; overflow:auto; margin-top:8px; border-radius:8px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Total Gen</th>
+            <th>Consumed</th>
+            <th>Saved</th>
+            <th>Status</th>
+            <th>Target</th>
+            <th>Note</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard" class="tab">
+    <div class="card">
+      <h2>📊 Dashboard</h2>
+      <br />
+      <div class="flex-row">
+        <div>
+          <label>Range</label>
+          <select id="rangeSelect">
+            <option value="all">All</option>
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+          </select>
+        </div>
+        <div>
+          <label>Show Target Line</label>
+          <select id="targetMode">
+            <option value="none">None</option>
+            <option value="daily">Use daily target</option>
+            <option value="avg">Use average target</option>
+          </select>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat-box">
+          <div class="stat-box-title">Site</div>
+          <div class="stat-box-value" id="siteNameDisplay">-</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">Total Generated</div>
+          <div class="stat-box-value" id="totalGen">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">Total Consumed</div>
+          <div class="stat-box-value" id="totalCon">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">Total Saved</div>
+          <div class="stat-box-value" id="totalStore">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">Reward Days</div>
+          <div class="stat-box-value" id="rewardDays">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">Warning Days</div>
+          <div class="stat-box-value" id="warningDays">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-box-title">Longest Reward Streak</div>
+          <div class="stat-box-value" id="bestStreak">0</div>
+        </div>
+      </div>
+      <p id="highDays" style="margin-top:12px;font-size:13px;animation:slideInUp 0.5s ease-out;"></p>
+    </div>
+
+    <div class="charts-grid">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <h3>Source Contribution</h3>
+          <span class="pill">🎨 Generated mix</span>
+        </div>
+        <canvas id="sourcesChart"></canvas>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <h3>Generated vs Consumed</h3>
+          <span class="pill">📈 + Target line</span>
+        </div>
+        <canvas id="genConChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div id="settings" class="tab card">
+    <h2>⚙️ Settings & Site Profile</h2><br>
+
+    <h3 style="margin-bottom:8px;">🏢 Site Profile</h3>
+    <div class="flex-row">
+      <div>
+        <label>Site Name</label>
+        <input type="text" id="siteName" placeholder="e.g. ABC Factory" />
+      </div>
+      <div>
+        <label>Location</label>
+        <input type="text" id="siteLocation" placeholder="e.g. Nagpur" />
+      </div>
+      <div>
+        <label>Responsible Person</label>
+        <input type="text" id="siteOwner" placeholder="e.g. Energy Manager" />
+      </div>
+    </div>
+    <button class="primary" id="saveProfileBtn">✓ Save Profile</button>
+    <p id="profileMsg" style="font-size:12px;margin-top:6px;"></p>
+
+    <hr style="margin:14px 0;border-color:var(--border);">
+
+    <h3 style="margin-bottom:8px;">💾 Data Management</h3>
+    <p style="font-size:12px;color:var(--subtext);margin-bottom:8px;">
+      Backup or clear app data stored in this browser (localStorage).
+    </p>
+    <div class="flex-row" style="margin-bottom:10px;">
+      <button class="ghost" id="exportCsvBtn">📥 Export CSV</button>
+      <button class="ghost" id="exportJsonBtn">💾 Backup JSON</button>
+      <label style="font-size:11px;flex:1;">
+        📤 Import JSON
+        <input type="file" id="importJsonInput" accept=".json" style="margin-top:4px;padding:4px;" />
+      </label>
+    </div>
+    <button class="danger" id="resetBtn">🗑️ Reset All Data</button>
+  </div>
+
+  <script>
+    // Theme
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    const themeBtn = document.getElementById('themeToggleBtn');
+    function updateThemeButtonLabel() {
+      const cur = document.documentElement.getAttribute('data-theme');
+      themeBtn.textContent = cur === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    }
+    updateThemeButtonLabel();
+    themeBtn.addEventListener('click', () => {
+      const cur = document.documentElement.getAttribute('data-theme');
+      const next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      updateThemeButtonLabel();
+    });
+
+    // Storage keys
+    const STORAGE_KEY = "energyProFinal_v1";
+    const PROFILE_KEY = "energySiteProfile_v1";
+
+    function loadEntries() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }
+    function saveEntries(entries) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    }
+    function loadProfile() {
+      const raw = localStorage.getItem(PROFILE_KEY);
+      return raw ? JSON.parse(raw) : { name:"", location:"", owner:"" };
+    }
+    function saveProfile(p) {
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+    }
+
+    let entries = loadEntries();
+    let profile = loadProfile();
+    let editId = null;
+
+    const SOURCES = ["chemical","thermal","nuclear","solar","wind","mechanical"];
+    const sourceIds = {
+      chemical: "chemInput",
+      thermal: "thermInput",
+      nuclear: "nucInput",
+      solar: "solarInput",
+      wind: "windInput",
+      mechanical: "mechInput"
+    };
+
+    function fillProfileForm() {
+      document.getElementById("siteName").value = profile.name || "";
+      document.getElementById("siteLocation").value = profile.location || "";
+      document.getElementById("siteOwner").value = profile.owner || "";
+      document.getElementById("siteNameDisplay").textContent = profile.name || "-";
+    }
+
+    function updateTotals() {
+      let totalGen = 0;
+      SOURCES.forEach(src => {
+        const val = parseFloat(document.getElementById(sourceIds[src]).value || "0");
+        totalGen += val;
+      });
+      const con = parseFloat(document.getElementById("conInput").value || "0");
+      const stored = totalGen - con;
+      document.getElementById("totalGenDisplay").textContent = totalGen.toFixed(2);
+      document.getElementById("storedDisplay").textContent = stored.toFixed(2);
+    }
+    SOURCES.forEach(src => {
+      document.getElementById(sourceIds[src]).addEventListener("input", updateTotals);
+    });
+    document.getElementById("conInput").addEventListener("input", updateTotals);
+
+    // Tabs
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const activeButtons = document.querySelectorAll(".tab-btn.active");
+        const activeTabs = document.querySelectorAll(".tab.active");
+        
+        activeButtons.forEach(b => b.classList.remove("active"));
+        activeTabs.forEach(t => t.classList.remove("active"));
+        
+        btn.classList.add("active");
+        const tabElement = document.getElementById(btn.dataset.tab);
+        if (tabElement) {
+          tabElement.classList.add("active");
+          
+          // Load data after tab animation
+          setTimeout(() => {
+            if (btn.dataset.tab === "history") renderHistory();
+            if (btn.dataset.tab === "dashboard") updateDashboard();
+            if (btn.dataset.tab === "settings") fillProfileForm();
+          }, 50);
+        }
+      });
+    });
+
+    // Save / Update
+    document.getElementById("saveBtn").addEventListener("click", () => {
+      const date = document.getElementById("dateInput").value;
+      if (!date) {
+        document.getElementById("addMsg").textContent = "❌ Please select a date.";
+        document.getElementById("addMsg").style.color = "var(--danger)";
+        return;
+      }
+
+      const sourcesObj = {};
+      let totalGen = 0;
+      SOURCES.forEach(src => {
+        const val = parseFloat(document.getElementById(sourceIds[src]).value || "0");
+        sourcesObj[src] = val;
+        totalGen += val;
+      });
+
+      const con = parseFloat(document.getElementById("conInput").value || "0");
+      const stored = totalGen - con;
+      const note = document.getElementById("noteInput").value.trim();
+      const dailyTarget = parseFloat(document.getElementById("targetInput").value || "0");
+
+      let status = "normal";
+      if (stored >= 10 && (dailyTarget === 0 || con <= dailyTarget)) status = "reward";
+      if (stored < 0 || con > totalGen) status = "warning";
+
+      const base = {
+        date,
+        sources: sourcesObj,
+        generated: totalGen,
+        consumed: con,
+        stored,
+        note,
+        status,
+        target: dailyTarget
+      };
+
+      if (editId !== null) {
+        base.id = editId;
+        entries = entries.map(e => e.id === editId ? base : e);
+        editId = null;
+        document.getElementById("saveBtn").textContent = "✓ Save Entry";
+      } else {
+        base.id = Date.now();
+        entries.push(base);
+      }
+
+      saveEntries(entries);
+      document.getElementById("addMsg").textContent = "✅ Saved successfully!";
+      document.getElementById("addMsg").style.color = "var(--success)";
+      setTimeout(() => document.getElementById("addMsg").textContent = "", 3000);
+      clearForm();
+      renderHistory();
+      updateDashboard();
+    });
+
+    function clearForm() {
+      document.getElementById("dateInput").value = "";
+      SOURCES.forEach(src => document.getElementById(sourceIds[src]).value = "0");
+      document.getElementById("conInput").value = "";
+      document.getElementById("noteInput").value = "";
+      document.getElementById("targetInput").value = "";
+      updateTotals();
+    }
+
+    // Settings: profile save
+    document.getElementById("saveProfileBtn").addEventListener("click", () => {
+      profile = {
+        name: document.getElementById("siteName").value.trim(),
+        location: document.getElementById("siteLocation").value.trim(),
+        owner: document.getElementById("siteOwner").value.trim()
+      };
+      saveProfile(profile);
+      fillProfileForm();
+      document.getElementById("profileMsg").textContent = "✅ Profile saved.";
+      document.getElementById("profileMsg").style.color = "var(--success)";
+      setTimeout(()=>document.getElementById("profileMsg").textContent="",2000);
+    });
+
+    // Reset from settings
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      if (!confirm("🗑️ Clear all saved energy data? This cannot be undone.")) return;
+      entries = [];
+      saveEntries(entries);
+      renderHistory();
+      updateDashboard();
+    });
+
+    // History filters
+    const fromDateInput = document.getElementById("fromDate");
+    const toDateInput = document.getElementById("toDate");
+    document.getElementById("clearFilterBtn").addEventListener("click", () => {
+      fromDateInput.value = "";
+      toDateInput.value = "";
+      renderHistory();
+    });
+
+    function applyDateFilter(list) {
+      let filtered = [...list];
+      const fromVal = fromDateInput.value;
+      const toVal = toDateInput.value;
+      if (fromVal) {
+        const from = new Date(fromVal);
+        filtered = filtered.filter(e => new Date(e.date) >= from);
+      }
+      if (toVal) {
+        const to = new Date(toVal);
+        filtered = filtered.filter(e => new Date(e.date) <= to);
+      }
+      return filtered;
+    }
+
+    function renderHistory() {
+      const tbody = document.getElementById("historyBody");
+      tbody.innerHTML = "";
+      let list = [...entries].sort((a,b) => a.date.localeCompare(b.date));
+      list = applyDateFilter(list);
+
+      list.forEach((e, idx) => {
+        let statusText = "Normal", statusClass = "status-normal";
+        if (e.status === "reward") { statusText = "✨ Reward"; statusClass = "status-reward"; }
+        if (e.status === "warning") { statusText = "⚠️ Warning"; statusClass = "status-warning"; }
+
+        const shortNote = e.note ? (e.note.length > 25 ? e.note.slice(0,25) + "..." : e.note) : "-";
+        const targetText = e.target && e.target > 0 ? e.target.toFixed(1) : "-";
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${e.date}</td>
+          <td>${e.generated.toFixed(2)}</td>
+          <td class="${e.consumed > e.generated ? "high" : ""}">${e.consumed.toFixed(2)}</td>
+          <td>${e.stored.toFixed(2)}</td>
+          <td class="${statusClass}">${statusText}</td>
+          <td>${targetText}</td>
+          <td title="${e.note || ""}">${shortNote}</td>
+          <td style="display:flex;gap:4px;justify-content:center;">
+            <button class="secondary" onclick="editEntry(${e.id})" style="padding:4px 6px;">Edit</button>
+            <button class="danger" onclick="deleteEntry(${e.id})" style="padding:4px 6px;">Del</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    window.editEntry = function(id) {
+      const e = entries.find(x => x.id === id);
+      if (!e) return;
+      editId = id;
+      document.getElementById("dateInput").value = e.date;
+      SOURCES.forEach(src => {
+        document.getElementById(sourceIds[src]).value = e.sources?.[src] ?? 0;
+      });
+      document.getElementById("conInput").value = e.consumed;
+      document.getElementById("noteInput").value = e.note || "";
+      document.getElementById("targetInput").value = e.target || "";
+      document.getElementById("saveBtn").textContent = "✓ Update Entry";
+      updateTotals();
+      document.querySelector('[data-tab="add"]').click();
+    };
+
+    window.deleteEntry = function(id) {
+      if (!confirm("Delete this entry?")) return;
+      entries = entries.filter(e => e.id !== id);
+      saveEntries(entries);
+      renderHistory();
+      updateDashboard();
+    };
+
+    // CSV Export
+    document.getElementById("exportCsvBtn").addEventListener("click", () => {
+      if (!entries.length) { alert("No data to export."); return; }
+      const header = [
+        "date","generated","consumed","stored","status","target","note",
+        "chemical","thermal","nuclear","solar","wind","mechanical"
+      ];
+      const rows = entries.map(e => ([
+        e.date,
+        e.generated,
+        e.consumed,
+        e.stored,
+        e.status,
+        e.target || "",
+        (e.note || "").replace(/\"/g, '""'),
+        e.sources?.chemical || 0,
+        e.sources?.thermal || 0,
+        e.sources?.nuclear || 0,
+        e.sources?.solar || 0,
+        e.sources?.wind || 0,
+        e.sources?.mechanical || 0
+      ]));
+      const csvLines = [header.join(",")].concat(
+        rows.map(r => r.map(v => `"${v}"`).join(","))
+      );
+      const blob = new Blob([csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "energy_data.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // JSON backup / restore
+    document.getElementById("exportJsonBtn").addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(entries,null,2)], { type:"application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "energy_backup.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById("importJsonInput").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (!Array.isArray(data)) throw new Error("Invalid format");
+          entries = data;
+          saveEntries(entries);
+          renderHistory();
+          updateDashboard();
+          alert("✅ Data imported successfully.");
+        } catch (err) {
+          alert("❌ Invalid JSON file.");
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = "";
+    });
+
+    // Dashboard + Charts
+    const rangeSelect = document.getElementById("rangeSelect");
+    const targetModeSelect = document.getElementById("targetMode");
+    rangeSelect.addEventListener("change", updateDashboard);
+    targetModeSelect.addEventListener("change", updateDashboard);
+
+    let sourcesChart, genConChart;
+
+    function computeBestStreak(list) {
+      let best = 0, current = 0;
+      list.forEach(e => {
+        if (e.status === "reward") {
+          current++;
+          if (current > best) best = current;
+        } else {
+          current = 0;
+        }
+      });
+      return best;
+    }
+
+    function updateDashboard() {
+      const range = rangeSelect.value;
+      let filtered = [...entries].sort((a,b) => a.date.localeCompare(b.date));
+      if (range !== "all") {
+        const days = parseInt(range,10);
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days + 1);
+        filtered = filtered.filter(e => new Date(e.date) >= cutoff);
+      }
+
+      const totalGen = filtered.reduce((s,e)=>s+e.generated,0);
+      const totalCon = filtered.reduce((s,e)=>s+e.consumed,0);
+      const totalStore = filtered.reduce((s,e)=>s+e.stored,0);
+
+      document.getElementById("totalGen").textContent = totalGen.toFixed(2);
+      document.getElementById("totalCon").textContent = totalCon.toFixed(2);
+      document.getElementById("totalStore").textContent = totalStore.toFixed(2);
+
+      const rewardDays = filtered.filter(e => e.status === "reward").length;
+      const warningDays = filtered.filter(e => e.status === "warning").length;
+      document.getElementById("rewardDays").textContent = rewardDays;
+      document.getElementById("warningDays").textContent = warningDays;
+
+      const bestStreak = computeBestStreak(filtered);
+      document.getElementById("bestStreak").textContent = bestStreak;
+
+      const highDays = filtered.filter(e=>e.consumed>e.generated).map(e=>e.date);
+      document.getElementById("highDays").textContent =
+        highDays.length ? "⚠️ High-consumption days: " + highDays.join(", ") : "✅ No high-consumption days.";
+
+      const labels = filtered.map(e => e.date);
+      const genData = filtered.map(e => e.generated);
+      const conData = filtered.map(e => e.consumed);
+
+      const targetMode = targetModeSelect.value;
+      let targetData = [];
+      if (targetMode === "daily") {
+        targetData = filtered.map(e => e.target || 0);
+      } else if (targetMode === "avg") {
+        const nonZeroTargets = filtered.filter(e => e.target && e.target > 0).map(e => e.target);
+        const avg = nonZeroTargets.length
+          ? nonZeroTargets.reduce((s,v)=>s+v,0) / nonZeroTargets.length
+          : 0;
+        targetData = filtered.map(() => avg);
+      }
+
+      const sourceTotals = SOURCES.map(src =>
+        filtered.reduce((sum,e)=>sum + (e.sources?.[src] || 0),0)
+      );
+
+      const ctx1 = document.getElementById("sourcesChart").getContext("2d");
+      if (sourcesChart) sourcesChart.destroy();
+      const textColor = getComputedStyle(document.body).getPropertyValue('--text') || '#e5e7eb';
+      const subTextColor = getComputedStyle(document.body).getPropertyValue('--subtext') || '#9ca3af';
+      const gridColor = getComputedStyle(document.body).getPropertyValue('--grid-line') || '#111827';
+
+      sourcesChart = new Chart(ctx1, {
+        type: "doughnut",
+        data: {
+          labels: ["🔬 Chemical","🔥 Thermal","⚛️ Nuclear","☀️ Solar","💨 Wind","⚙️ Mechanical"],
+          datasets: [{
+            data: sourceTotals,
+            backgroundColor: ["#ff6b35","#f7931e","#ffc700","#00d4ff","#0066ff","#ff006e"],
+            borderColor: getComputedStyle(document.body).getPropertyValue('--card'),
+            borderWidth: 2
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { position:"bottom", labels:{ color:subTextColor.trim() || '#e5e7eb', padding: 15, font: { size: 12, weight: '600' } } }
+          },
+          cutout: "40%",
+          animation: { animateRotate: true, animateScale: false }
+        }
+      });
+
+      const ctx2 = document.getElementById("genConChart").getContext("2d");
+      if (genConChart) genConChart.destroy();
+      const datasets = [
+        { label:"Generated (kWh)", data:genData, borderColor:"#00f5a0", backgroundColor:"rgba(0,245,160,0.15)", tension:0.4, fill: true, borderWidth: 2, pointRadius: 4, pointBackgroundColor: "#00f5a0" },
+        { label:"Consumed (kWh)", data:conData, borderColor:"#ffb703", backgroundColor:"rgba(255,183,3,0.15)", tension:0.4, fill: true, borderWidth: 2, pointRadius: 4, pointBackgroundColor: "#ffb703" }
+      ];
+      if (targetMode !== "none") {
+        datasets.push({
+          label:"Target (kWh)",
+          data:targetData,
+          borderColor:"#ff006e",
+          borderDash:[6,4],
+          tension:0,
+          pointRadius:0,
+          borderWidth: 2
+        });
+      }
+
+      genConChart = new Chart(ctx2, {
+        type:"line",
+        data:{ labels, datasets },
+        options:{
+          responsive: true,
+          plugins:{ legend:{ labels:{ color:subTextColor.trim() || '#e5e7eb', padding: 15, font: { size: 12, weight: '600' } } } },
+          scales:{
+            x:{ ticks:{ color:subTextColor.trim() || '#e5e7eb', font: { size: 11 } }, grid:{ color:gridColor.trim() || '#111827', drawBorder: false } },
+            y:{ ticks:{ color:subTextColor.trim() || '#e5e7eb', font: { size: 11 } }, grid:{ color:gridColor.trim() || '#111827', drawBorder: false } }
+          }
+        }
+      });
+    }
+
+    // Initial
+    fillProfileForm();
+    updateTotals();
+    renderHistory();
+    updateDashboard();
+  </script>
+</body>
+</html>
